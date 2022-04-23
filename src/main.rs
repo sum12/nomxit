@@ -1,49 +1,23 @@
-use nom::{bytes::complete::tag, character::complete::one_of, IResult};
-
-#[derive(Debug, PartialEq)]
-enum CheckType {
-    Space,
-    Checked,
-    At,
-    Tilde,
+mod parser;
+mod prelude {
+    pub use nom::branch::alt;
+    pub use nom::bytes::complete::{tag, take, take_till};
+    pub use nom::character::complete::{alpha1, char, one_of};
+    pub use nom::character::is_digit;
+    pub use nom::combinator::map_parser;
+    pub use nom::combinator::not;
+    pub use nom::combinator::peek;
+    pub use nom::multi::{many0, many1};
+    pub use nom::sequence::delimited;
+    pub use nom::sequence::pair;
+    pub use nom::sequence::preceded;
+    pub use nom::sequence::separated_pair;
+    pub use nom::sequence::terminated;
+    pub use nom::sequence::tuple;
+    pub use nom::IResult;
+    pub use nom::Parser;
 }
 
-impl CheckType {
-    fn parse(input: &str) -> IResult<&str, Self> {
-        let (input, chr) = one_of(" @x~")(input)?;
-        Ok((
-            input,
-            match chr {
-                ' ' => CheckType::Space,
-                'x' => CheckType::Checked,
-                '@' => CheckType::At,
-                '~' => CheckType::Tilde,
-                _ => {
-                    return Err(nom::Err::Failure(nom::error::Error::new(
-                        input,
-                        nom::error::ErrorKind::OneOf,
-                    )))
-                }
-            },
-        ))
-    }
-}
+use parser::*;
 
-#[derive(Debug, PartialEq)]
-struct Checkbox(CheckType);
-
-impl Checkbox {
-    fn parse(input: &str) -> IResult<&str, Self> {
-        let (input, _) = tag("[")(input)?;
-        let (input, checktype) = CheckType::parse(input)?;
-        let (input, _) = tag("]")(input)?;
-        Ok((input, Self(checktype)))
-    }
-}
-
-fn main() {
-    assert_eq!(
-        Checkbox::parse("[x]"),
-        Ok(("", Checkbox(CheckType::Checked)))
-    );
-}
+fn main() {}
