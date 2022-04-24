@@ -4,13 +4,22 @@ use nom::sequence::pair;
 use nom::IResult;
 use nom::Parser;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PriorityComponent {
     Padding(usize),
     Exclaimation(usize),
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Priority((PriorityComponent, PriorityComponent));
+
+impl std::default::Default for Priority {
+    fn default() -> Self {
+        Priority((
+            PriorityComponent::Exclaimation(0usize),
+            PriorityComponent::Padding(0usize),
+        ))
+    }
+}
 
 impl Priority {
     pub fn parse(input: &str) -> IResult<&str, Self> {
