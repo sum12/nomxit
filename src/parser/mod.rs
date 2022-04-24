@@ -6,3 +6,5 @@ mod duedate;
 pub use duedate::*;
 mod tag;
 pub use tag::*;
+mod item;
+pub use item::*;
