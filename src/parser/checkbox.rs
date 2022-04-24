@@ -1,5 +1,5 @@
 use crate::prelude::*;
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CheckType {
     Space,
     Checked,
@@ -7,48 +7,47 @@ pub enum CheckType {
     Tilde,
 }
 
-impl CheckType {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
-        let (input, chr) = one_of(" @x~")(input)?;
-        Ok((
-            input,
-            match chr {
-                ' ' => CheckType::Space,
-                'x' => CheckType::Checked,
-                '@' => CheckType::At,
-                '~' => CheckType::Tilde,
-                _ => {
-                    return Err(nom::Err::Failure(nom::error::Error::new(
-                        input,
-                        nom::error::ErrorKind::OneOf,
-                    )))
-                }
-            },
-        ))
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Checkbox(pub CheckType);
 
-impl Checkbox {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
-        let (input, _) = tag("[")(input)?;
-        let (input, checktype) = CheckType::parse(input)?;
-        let (input, _) = tag("]")(input)?;
-        Ok((input, Self(checktype)))
-    }
+type CheckboxResult<'a> = IResult<&'a str, Checkbox>;
+
+fn boxd<'a>(c: char, ret: CheckType) -> impl FnMut(&'a str) -> CheckboxResult {
+    nom::combinator::map(
+        delimited(
+            nom::character::complete::char('['),
+            nom::character::complete::char(c),
+            nom::character::complete::char(']'),
+        ),
+        move |_| Checkbox(ret),
+    )
 }
 
+fn type_space<'a>() -> impl FnMut(&'a str) -> CheckboxResult {
+    boxd(' ', CheckType::Space)
+}
+fn type_checked<'a>() -> impl FnMut(&'a str) -> CheckboxResult {
+    boxd('x', CheckType::Checked)
+}
+fn type_at<'a>() -> impl FnMut(&'a str) -> CheckboxResult {
+    boxd('@', CheckType::At)
+}
+fn type_tilde<'a>() -> impl FnMut(&'a str) -> CheckboxResult {
+    boxd('~', CheckType::Tilde)
+}
+
+pub fn checkbox<'a>() -> impl FnMut(&'a str) -> CheckboxResult {
+    alt((type_space(), type_checked(), type_at(), type_tilde()))
+}
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_basi() {
-        assert_eq!(
-            Checkbox::parse("[x]"),
-            Ok(("", Checkbox(CheckType::Checked)))
-        );
+        assert_eq!(checkbox()("[x]"), Ok(("", Checkbox(CheckType::Checked))));
+        assert_eq!(checkbox()("[@]"), Ok(("", Checkbox(CheckType::At))));
+        assert_eq!(checkbox()("[ ]"), Ok(("", Checkbox(CheckType::Space))));
+        assert_eq!(checkbox()("[~]"), Ok(("", Checkbox(CheckType::Tilde))));
     }
 }
