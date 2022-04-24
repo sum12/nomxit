@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Tag<'a> {
     Name(&'a str),
     KeyVal((&'a str, &'a str)),
@@ -31,7 +31,7 @@ fn keyval<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag> {
     )
 }
 
-fn parse<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag> {
+pub fn item_tag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag> {
     alt((name(), keyval()))
 }
 
@@ -42,16 +42,19 @@ mod test {
     #[test]
     fn test_basic() {
         assert_eq!(Ok(("", Tag::Name("tagname"))), name()("#tagname"));
-        assert_eq!(Ok(("", Tag::Name("tagname"))), parse()("#tagname"));
+        assert_eq!(Ok(("", Tag::Name("tagname"))), item_tag()("#tagname"));
         assert_eq!(Ok(("", Tag::KeyVal(("key", "val")))), keyval()("#key=val"));
-        assert_eq!(Ok(("", Tag::KeyVal(("key", "val")))), parse()("#key=val"));
         assert_eq!(
-            Ok(("", Tag::KeyVal(("key", "v a l")))),
-            parse()("#key='v a l'")
+            Ok(("", Tag::KeyVal(("key", "val")))),
+            item_tag()("#key=val")
         );
         assert_eq!(
             Ok(("", Tag::KeyVal(("key", "v a l")))),
-            parse()("#key=\"v a l\"")
+            item_tag()("#key='v a l'")
+        );
+        assert_eq!(
+            Ok(("", Tag::KeyVal(("key", "v a l")))),
+            item_tag()("#key=\"v a l\"")
         );
     }
 }
