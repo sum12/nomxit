@@ -7,7 +7,7 @@ use crate::prelude::*;
     yyyy-Www or yyyy/Www to reference a week period
     yyyy-Qq or yyyy/Qq to reference a quarter period
 */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Period {
     Day((u16, u8, u8)),
     Month((u16, u8)),
@@ -76,7 +76,7 @@ fn due_quarter<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Period> {
     })
 }
 
-fn due_date<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Period> {
+pub fn due_date<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Period> {
     preceded(
         tag("-> "),
         alt((
