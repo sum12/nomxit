@@ -22,7 +22,7 @@ impl std::default::Default for Priority {
     }
 }
 
-pub fn priority<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Priority> {
+pub fn priority<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Priority, VerboseError<&str>> {
     let de = pair(
         map(many1(char('.')), |v| PriorityComponent::Padding(v.len())),
         map(many0(char('!')), |v| {

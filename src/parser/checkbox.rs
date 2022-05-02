@@ -10,7 +10,7 @@ pub enum CheckType {
 #[derive(Debug, PartialEq)]
 pub struct Checkbox(pub CheckType);
 
-type CheckboxResult<'a> = IResult<&'a str, Checkbox>;
+type CheckboxResult<'a> = IResult<&'a str, Checkbox, VerboseError<&'a str>>;
 
 fn boxd<'a>(c: char, ret: CheckType) -> impl FnMut(&'a str) -> CheckboxResult {
     nom::combinator::map(

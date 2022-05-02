@@ -6,14 +6,14 @@ pub enum Tag<'a> {
     KeyVal((&'a str, &'a str)),
 }
 
-fn name<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag> {
-    nom::combinator::map(
+fn name<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&str>> {
+    map(
         terminated(preceded(tag("#"), alpha1), nom::combinator::not(tag("="))),
         |name| Tag::Name(name),
     )
 }
 
-fn middle<'a>(delim: char) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str> {
+fn middle<'a>(delim: char) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str, VerboseError<&str>> {
     delimited(
         nom::character::complete::char(delim),
         take_till(move |c| c == delim),
@@ -21,17 +21,27 @@ fn middle<'a>(delim: char) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str> {
     )
 }
 
-fn keyval<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag> {
-    nom::combinator::map(
-        preceded(
-            tag("#"),
-            separated_pair(alpha1, tag("="), alt((middle('"'), middle('\''), alpha1))),
+fn keyval<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&str>> {
+    map(
+        context(
+            "failed to parse tag",
+            preceded(
+                tag("#"),
+                separated_pair(
+                    context("unable to parse tag key", alpha1),
+                    tag("="),
+                    context(
+                        "Unable to parse tag value",
+                        alt((middle('"'), middle('\''), alpha1)),
+                    ),
+                ),
+            ),
         ),
         |(k, v)| Tag::KeyVal((k, v)),
     )
 }
 
-pub fn item_tag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag> {
+pub fn item_tag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&str>> {
     alt((name(), keyval()))
 }
 

@@ -16,54 +16,64 @@ struct Item<'a> {
     content: Vec<ItemContent<'a>>,
 }
 
-fn item_itemtag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>> {
-    nom::combinator::map(item_tag(), |t| ItemContent::Tag(t))
+fn item_itemtag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>, VerboseError<&str>>
+{
+    map(item_tag(), |t| ItemContent::Tag(t))
 }
 
-fn item_duedate<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>> {
-    nom::combinator::map(due_date(), |d| ItemContent::DueDate(d))
+fn item_duedate<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>, VerboseError<&str>>
+{
+    map(due_date(), |d| ItemContent::DueDate(d))
 }
 
-fn item_other<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>> {
-    nom::combinator::map(
+fn item_other<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>, VerboseError<&str>>
+{
+    map(
         take_till(|c| is_space(c as u8) || is_newline(c as u8)),
         |r| ItemContent::Other(r),
     )
 }
 
-fn item_description<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Vec<ItemContent<'a>>> {
+fn item_description<'a>(
+) -> impl FnMut(&'a str) -> IResult<&'a str, Vec<ItemContent<'a>>, VerboseError<&str>> {
     separated_list1(
         alt((tag(" "), preceded(line_ending, tag("    ")))),
         alt((item_duedate(), item_itemtag(), item_other())),
     )
 }
 
+// match prev {
+//                     Ok(ItemContent::Other((s))) -> (acc, Ok(ItemContent::Other(s)))
+//                 }
 type Descs<'a> = Vec<ItemContent<'a>>;
 
 type XItem<'a> = (Checkbox, Priority, Descs<'a>);
 
-fn item_entry<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, XItem> {
-    tuple((
-        context("checkbox", checkbox()),
-        preceded(context("Missing priority", tag(" ")), priority())
-            .or(success(Priority::default())),
-        preceded(
-            tag(" "),
-            context(
-                "Too many due dates",
-                verify(item_description(), |descs: &Descs| {
-                    descs
-                        .iter()
-                        .filter(|content| matches!(content, ItemContent::DueDate(_)))
-                        .count()
-                        <= 1
-                }),
+fn item_entry<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, XItem, VerboseError<&str>> {
+    context(
+        "unable to parser item_entry",
+        tuple((
+            context("checkbox", checkbox()),
+            preceded(context("Missing priority", tag(" ")), priority())
+                .or(success(Priority::default())),
+            preceded(
+                tag(" "),
+                context(
+                    "Too many due dates",
+                    verify(item_description(), |descs: &Descs| {
+                        descs
+                            .iter()
+                            .filter(|content| matches!(content, ItemContent::DueDate(_)))
+                            .count()
+                            <= 1
+                    }),
+                ),
             ),
-        ),
-    ))
+        )),
+    )
 }
 
-fn item_list<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Vec<XItem>> {
+fn item_list<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Vec<XItem>, VerboseError<&str>> {
     terminated(
         separated_list1(many1(line_ending), item_entry()),
         line_ending,
@@ -74,7 +84,7 @@ fn item_list<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Vec<XItem>> {
 mod tests {
     use super::*;
 
-    fn check<'a, T>(res: IResult<&'a str, T>) -> bool {
+    fn check<'a, T>(res: IResult<&'a str, T, VerboseError<&str>>) -> bool {
         res.is_ok() && res.unwrap().0.len() == 0
     }
 
