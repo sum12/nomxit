@@ -44,10 +44,10 @@ fn item_entry<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, XItem, VerboseErr
         "unable to parser item_entry",
         tuple((
             context("checkbox", checkbox()),
-            preceded(context("Missing priority", tag(" ")), priority())
+            preceded(context("Missing priority", space1), priority())
                 .or(success(Priority::default())),
             preceded(
-                tag(" "),
+                context("atleast one space is needed", space1),
                 context(
                     "Too many due dates",
                     verify(item_description(), |descs: &Descs| {
