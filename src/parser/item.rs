@@ -45,7 +45,7 @@ type XItem<'a> = (Checkbox, Priority, Descs<'a>);
 fn item_entry<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, XItem> {
     tuple((
         context("checkbox", checkbox()),
-        preceded(context("Missing priority", tag(" ")), Priority::parse)
+        preceded(context("Missing priority", tag(" ")), priority())
             .or(success(Priority::default())),
         preceded(
             tag(" "),

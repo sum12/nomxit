@@ -1,8 +1,9 @@
-use nom::character::complete::char;
-use nom::multi::{many0, many1};
-use nom::sequence::pair;
-use nom::IResult;
-use nom::Parser;
+// use nom::character::complete::char;
+// use nom::multi::{many0, many1};
+// use nom::sequence::pair;
+// use nom::IResult;
+// use nom::Parser;
+use crate::prelude::*;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PriorityComponent {
@@ -21,20 +22,20 @@ impl std::default::Default for Priority {
     }
 }
 
-impl Priority {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
-        let de = pair(
-            many1(char('.')).map(|v| PriorityComponent::Padding(v.len())),
-            many0(char('!')).map(|v| PriorityComponent::Exclaimation(v.len())),
-        );
-        let ed = pair(
-            many1(char('!')).map(|v| PriorityComponent::Exclaimation(v.len())),
-            many0(char('.')).map(|v| PriorityComponent::Padding(v.len())),
-        );
-        de.or(ed)
-            .parse(input)
-            .and_then(|(input, (com1, com2))| Ok((input, Priority((com1, com2)))))
-    }
+pub fn priority<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Priority> {
+    let de = pair(
+        map(many1(char('.')), |v| PriorityComponent::Padding(v.len())),
+        map(many0(char('!')), |v| {
+            PriorityComponent::Exclaimation(v.len())
+        }),
+    );
+    let ed = pair(
+        map(many1(char('!')), |v| {
+            PriorityComponent::Exclaimation(v.len())
+        }),
+        map(many0(char('.')), |v| PriorityComponent::Padding(v.len())),
+    );
+    map(alt((de, ed)), |(com1, com2)| (Priority((com1, com2))))
 }
 
 #[cfg(test)]
@@ -44,7 +45,7 @@ mod tests {
     #[test]
     fn test_basic() {
         assert_eq!(
-            Priority::parse("!..."),
+            priority()("!..."),
             Ok((
                 "",
                 Priority((
