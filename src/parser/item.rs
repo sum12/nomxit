@@ -9,13 +9,6 @@ enum ItemContent<'a> {
     Other(&'a str),
 }
 
-struct Item<'a> {
-    checkbox: Checkbox,
-    due_date: Period,
-    priority: Option<Priority>,
-    content: Vec<ItemContent<'a>>,
-}
-
 fn item_itemtag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, ItemContent<'a>, VerboseError<&str>>
 {
     map(item_tag(), |t| ItemContent::Tag(t))
@@ -42,9 +35,6 @@ fn item_description<'a>(
     )
 }
 
-// match prev {
-//                     Ok(ItemContent::Other((s))) -> (acc, Ok(ItemContent::Other(s)))
-//                 }
 type Descs<'a> = Vec<ItemContent<'a>>;
 
 type XItem<'a> = (Checkbox, Priority, Descs<'a>);

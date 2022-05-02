@@ -12,5 +12,3 @@ pub mod prelude {
     pub use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
     pub use nom::{IResult, Parser};
 }
-
-use parser::*;
