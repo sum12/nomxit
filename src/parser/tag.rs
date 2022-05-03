@@ -8,7 +8,10 @@ pub enum Tag<'a> {
 
 fn name<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&str>> {
     map(
-        terminated(preceded(tag("#"), alpha1), nom::combinator::not(tag("="))),
+        preceded(
+            tag("#"),
+            take_till1(|c| is_space(c as u8) || is_newline(c as u8) || c == '='),
+        ),
         |name| Tag::Name(name),
     )
 }
@@ -32,7 +35,14 @@ fn keyval<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&st
                     tag("="),
                     context(
                         "Unable to parse tag value",
-                        alt((middle('"'), middle('\''), alpha1)),
+                        alt((
+                            middle('"'),
+                            middle('\''),
+                            preceded(
+                                not(one_of("\"'")),
+                                take_till(|c| is_space(c as u8) || is_newline(c as u8)),
+                            ),
+                        )),
                     ),
                 ),
             ),
@@ -42,7 +52,7 @@ fn keyval<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&st
 }
 
 pub fn item_tag<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Tag, VerboseError<&str>> {
-    alt((name(), keyval()))
+    alt((keyval(), name()))
 }
 
 #[cfg(test)]
@@ -65,6 +75,10 @@ mod test {
         assert_eq!(
             Ok(("", Tag::KeyVal(("key", "v a l")))),
             item_tag()("#key=\"v a l\"")
+        );
+        assert_eq!(
+            Ok(("='v a l\"", Tag::Name("key"))),
+            item_tag()("#key='v a l\"")
         );
     }
 }
