@@ -23,35 +23,55 @@ fn year<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, u16, VerboseError<&str>
 fn month<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, u8, VerboseError<&str>> {
     preceded(
         tag("-"),
-        map_parser(take(2u8), nom::character::complete::u8),
+        verify(map_parser(take(2u8), nom::character::complete::u8), |m| {
+            *m < 13
+        }),
     )
 }
 
 fn day<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, u8, VerboseError<&str>> {
     preceded(
         tag("-"),
-        map_parser(take(2u8), nom::character::complete::u8),
+        verify(map_parser(take(2u8), nom::character::complete::u8), |d| {
+            *d < 31
+        }),
     )
 }
 
 fn week<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, u8, VerboseError<&str>> {
     preceded(
         tag("-W"),
-        map_parser(take(2u8), nom::character::complete::u8),
+        verify(map_parser(take(2u8), nom::character::complete::u8), |w| {
+            *w < 54
+        }),
     )
 }
 
 fn quarter<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, u8, VerboseError<&str>> {
     preceded(
         tag("-Q"),
-        map_parser(take(1u8), nom::character::complete::u8),
+        verify(map_parser(take(1u8), nom::character::complete::u8), |q| {
+            *q < 5
+        }),
     )
 }
 
 fn due_day<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Period, VerboseError<&str>> {
-    map(tuple((year(), month(), day())), |(year, month, day)| {
-        Period::Day((year, month, day))
-    })
+    map(
+        verify(tuple((year(), month(), day())), |(y, m, d)| match *m {
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => *d <= 31,
+            4 | 6 | 9 | 11 => *d <= 30,
+            2 => {
+                if (*y % 100 == 0 && *y % 400 == 0) || *y % 4 == 0 {
+                    *d <= 29
+                } else {
+                    *d <= 28
+                }
+            }
+            _ => panic!("logic error in validating duedates"),
+        }),
+        |(year, month, day)| Period::Day((year, month, day)),
+    )
 }
 
 fn due_month<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, Period, VerboseError<&str>> {
@@ -109,5 +129,6 @@ mod tests {
             due_quarter()("2018-Q1")
         );
         assert_eq!(Ok(("", Period::Week((2018, 52)))), due_week()("2018-W52"));
+        assert!(matches!(dbg!(due_week()("2018-W54")), Err(_)));
     }
 }

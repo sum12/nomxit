@@ -80,9 +80,9 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        assert!(check(item_entry()("[x] !!.. -> 2018-99-99 one two #tag")));
-        assert!(check(item_entry()("[~] -> 2018-99-99 one #tag")));
-        assert!((item_entry()("[ ] -> 2018-99-99 -> 2018-99-99")).is_err());
+        assert!(check(item_entry()("[x] !!.. -> 2018-12-12 one two #tag")));
+        assert!(check(item_entry()("[~] -> 2018-12-12 one #tag")));
+        assert!((item_entry()("[ ] -> 2018-12-12 -> 2018-12-12")).is_err());
         assert!(check(dbg!(item_entry()("[x] one\n    two three"))));
     }
 
